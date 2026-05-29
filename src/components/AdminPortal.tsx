@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, LayoutDashboard, Settings, DollarSign, ShoppingBag, Clock, CheckCircle2, Search, MessageSquare, Download, Eye, Edit2, Check, X, ShieldAlert, Key, User, Instagram, Phone, Mail } from 'lucide-react';
+import { Shield, LayoutDashboard, Settings, DollarSign, ShoppingBag, Clock, CheckCircle2, Search, MessageSquare, Download, Eye, Edit2, Check, X, ShieldAlert, Key, User, Instagram, Phone, Mail, Trash2 } from 'lucide-react';
 import { Order, SizePrice, AdminConfig } from '../types';
 import { getOrders, updateOrderStatus, getAdminConfig, updateAdminConfig, getAdminPassword, updateAdminPassword, getSizes, updateSizes } from '../lib/storage';
 
@@ -37,9 +37,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const [configSuccess, setConfigSuccess] = useState(false);
 
   // Editing Prices State
-  const [editingSizeId, setEditingSizeId] = useState<string | null>(null);
+   const [editingSizeId, setEditingSizeId] = useState<string | null>(null);
+  const [editSizeLabel, setEditSizeLabel] = useState<string>('');
+  const [editSizeDimensions, setEditSizeDimensions] = useState<string>('');
   const [editPhotoPrice, setEditPhotoPrice] = useState<number>(0);
   const [editFramePrice, setEditFramePrice] = useState<number>(0);
+
+   // Adding New Size State
+  const [showAddSizeForm, setShowAddSizeForm] = useState<boolean>(false);
+  const [newSizeLabel, setNewSizeLabel] = useState<string>('');
+  const [newSizeDimensions, setNewSizeDimensions] = useState<string>('');
+  const [newSizePhotoPrice, setNewSizePhotoPrice] = useState<number>(100);
+  const [newSizeFramePrice, setNewSizeFramePrice] = useState<number>(300);
 
   // Refresh orders from storage
   const refreshOrders = () => {
@@ -126,17 +135,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   };
 
   // Edit Prices
-  const startEditingPrice = (size: SizePrice) => {
+   const startEditingSize = (size: SizePrice) => {
     setEditingSizeId(size.id);
+    setEditSizeLabel(size.label);
+    setEditSizeDimensions(size.dimensions);
     setEditPhotoPrice(size.photoPrice);
     setEditFramePrice(size.framePrice);
   };
 
-  const savePriceEdit = (id: string) => {
+  const saveSizeEdit = (id: string) => {
+    if (!editSizeLabel.trim() || !editSizeDimensions.trim()) return;
+
     const updatedSizes = sizes.map(size => {
       if (size.id === id) {
         return {
           ...size,
+          label: editSizeLabel,
+          dimensions: editSizeDimensions,
           photoPrice: editPhotoPrice,
           framePrice: editFramePrice,
         };
@@ -147,6 +162,37 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     updateSizes(updatedSizes);
     setSizes(updatedSizes);
     setEditingSizeId(null);
+  };
+
+  const handleAddSizeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSizeLabel.trim() || !newSizeDimensions.trim()) return;
+
+    const newSize: SizePrice = {
+      id: `size-${Date.now()}`,
+      label: newSizeLabel,
+      dimensions: newSizeDimensions,
+      photoPrice: newSizePhotoPrice,
+      framePrice: newSizeFramePrice,
+    };
+
+    const updatedSizes = [...sizes, newSize];
+    updateSizes(updatedSizes);
+    setSizes(updatedSizes);
+    // Reset Form
+    setNewSizeLabel('');
+    setNewSizeDimensions('');
+    setNewSizePhotoPrice(100);
+    setNewSizeFramePrice(300);
+    setShowAddSizeForm(false);
+  };
+
+  const handleDeleteSize = (id: string) => {
+    if (confirm('Are you sure you want to delete this size option? This cannot be undone.')) {
+      const updatedSizes = sizes.filter(size => size.id !== id);
+      updateSizes(updatedSizes);
+      setSizes(updatedSizes);
+    }
   };
 
   // Filter and Search Orders
@@ -547,11 +593,88 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
         {activeTab === 'prices' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="bg-slate-900/20 border border-slate-800 p-6 rounded-2xl">
-              <h3 className="text-lg font-bold text-slate-200 mb-2">Manage Sizes & Prices</h3>
-              <p className="text-xs text-slate-400 mb-6 max-w-2xl leading-relaxed">
-                Update the cost of photo prints and frame prints in INR (₹). Updates will immediately apply to the customer order wizard and pricing tables.
-              </p>
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-200 mb-1">Manage Sizes & Prices</h3>
+                  <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+                    Add, edit, or remove the photo print sizes, dimensions, and frame costs in INR (₹). Updates apply dynamically to the order wizard.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddSizeForm(!showAddSizeForm)}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 self-start sm:self-auto transition"
+                >
+                  {showAddSizeForm ? 'Cancel New Size' : '+ Add New Size Option'}
+                </button>
+              </div>
 
+              {/* Add New Size Form */}
+              {showAddSizeForm && (
+                <form onSubmit={handleAddSizeSubmit} className="bg-slate-950/60 border border-emerald-500/20 p-5 rounded-xl mb-6 grid grid-cols-1 sm:grid-cols-12 gap-4 text-xs animate-in slide-in-from-top-4 duration-200">
+                  <div className="sm:col-span-12 border-b border-slate-850 pb-2 mb-1">
+                    <span className="font-extrabold text-emerald-400 uppercase tracking-wider">Create New Size Option</span>
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-slate-400 font-semibold mb-1">Size Label / Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 10x12 Portrait"
+                      value={newSizeLabel}
+                      onChange={(e) => setNewSizeLabel(e.target.value)}
+                      className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-slate-400 font-semibold mb-1">Dimensions (Inches / CM)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder='e.g. 10" x 12" (25 x 30 cm)'
+                      value={newSizeDimensions}
+                      onChange={(e) => setNewSizeDimensions(e.target.value)}
+                      className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-400 font-semibold mb-1">Photo Print Price (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={newSizePhotoPrice}
+                      onChange={(e) => setNewSizePhotoPrice(Number(e.target.value))}
+                      className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-400 font-semibold mb-1">Photo + Frame Price (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={newSizeFramePrice}
+                      onChange={(e) => setNewSizeFramePrice(Number(e.target.value))}
+                      className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 flex items-end">
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg transition"
+                    >
+                      Save Size
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Sizes Table */}
               <div className="bg-slate-950/40 border border-slate-850 rounded-xl overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -566,9 +689,36 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                   <tbody className="divide-y divide-slate-850 text-xs sm:text-sm">
                     {sizes.map((size) => (
                       <tr key={size.id} className="hover:bg-slate-900/10">
-                        <td className="py-4 px-5 font-bold text-slate-200">{size.label}</td>
-                        <td className="py-4 px-5 text-slate-400 font-medium">{size.dimensions}</td>
                         
+                        {/* Size Label */}
+                        <td className="py-4 px-5">
+                          {editingSizeId === size.id ? (
+                            <input
+                              type="text"
+                              value={editSizeLabel}
+                              onChange={(e) => setEditSizeLabel(e.target.value)}
+                              className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded text-xs font-bold text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          ) : (
+                            <span className="font-bold text-slate-200">{size.label}</span>
+                          )}
+                        </td>
+
+                        {/* Dimensions */}
+                        <td className="py-4 px-5">
+                          {editingSizeId === size.id ? (
+                            <input
+                              type="text"
+                              value={editSizeDimensions}
+                              onChange={(e) => setEditSizeDimensions(e.target.value)}
+                              className="w-full p-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          ) : (
+                            <span className="text-slate-400 font-medium">{size.dimensions}</span>
+                          )}
+                        </td>
+                        
+                        {/* Photo Print Price */}
                         <td className="py-4 px-5">
                           {editingSizeId === size.id ? (
                             <div className="flex items-center gap-1.5">
@@ -585,6 +735,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                           )}
                         </td>
 
+                        {/* Frame Price */}
                         <td className="py-4 px-5">
                           {editingSizeId === size.id ? (
                             <div className="flex items-center gap-1.5">
@@ -601,32 +752,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                           )}
                         </td>
 
+                        {/* Actions */}
                         <td className="py-4 px-5 text-right">
                           {editingSizeId === size.id ? (
                             <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => savePriceEdit(size.id)}
-                                className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded"
+                                onClick={() => saveSizeEdit(size.id)}
+                                className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded cursor-pointer"
                                 title="Save"
                               >
                                 <Check className="w-4 h-4 stroke-[3px]" />
                               </button>
                               <button
                                 onClick={() => setEditingSizeId(null)}
-                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
+                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded cursor-pointer"
                                 title="Cancel"
                               >
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => startEditingPrice(size)}
-                              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-750 rounded text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 ml-auto"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              <span>Edit Prices</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => startEditingSize(size)}
+                                className="px-2.5 py-1.5 bg-slate-850 hover:bg-slate-800 border border-slate-800 rounded text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 transition"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSize(size.id)}
+                                className="p-1.5 bg-red-950/40 hover:bg-red-900/20 border border-red-900/20 hover:border-red-900/40 text-red-400 hover:text-red-300 rounded transition"
+                                title="Delete Size Option"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
