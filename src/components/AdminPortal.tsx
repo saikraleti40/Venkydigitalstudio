@@ -757,6 +757,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                           {editingSizeId === size.id ? (
                             <div className="flex items-center justify-end gap-1.5">
                               <button
+                                type="button"
                                 onClick={() => saveSizeEdit(size.id)}
                                 className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded cursor-pointer"
                                 title="Save"
@@ -764,6 +765,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                                 <Check className="w-4 h-4 stroke-[3px]" />
                               </button>
                               <button
+                                type="button"
                                 onClick={() => setEditingSizeId(null)}
                                 className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded cursor-pointer"
                                 title="Cancel"
@@ -774,6 +776,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                           ) : (
                             <div className="flex items-center justify-end gap-1.5">
                               <button
+                                type="button"
                                 onClick={() => startEditingSize(size)}
                                 className="px-2.5 py-1.5 bg-slate-850 hover:bg-slate-800 border border-slate-800 rounded text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 transition"
                               >
@@ -781,6 +784,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                                 <span>Edit</span>
                               </button>
                               <button
+                                type="button"
                                 onClick={() => handleDeleteSize(size.id)}
                                 className="p-1.5 bg-red-950/40 hover:bg-red-900/20 border border-red-900/20 hover:border-red-900/40 text-red-400 hover:text-red-300 rounded transition"
                                 title="Delete Size Option"
